@@ -2,6 +2,7 @@ import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:movieapi/screens/home_screen.dart';
+import 'package:movieapi/screens/movie_detail.dart';
 
 void main(){
   runApp(DevicePreview(enabled: !kReleaseMode, builder: (context) =>  MyApp(),));
@@ -21,7 +22,7 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       locale: DevicePreview.locale(context),
       builder: DevicePreview.appBuilder,
-      home: MovieHomePage(),
+      home: MovieHomePage()
     );
   }
 }
