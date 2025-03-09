@@ -15,14 +15,14 @@ class ShimmerLoader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[800]!,
-      highlightColor: Colors.grey[600]!,
+      baseColor: const Color.fromARGB(255, 20, 20, 20),
+      highlightColor: const Color.fromARGB(255, 48, 48, 48),
       child: Container(
         width: width,
         height: height,
         margin: EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.grey[900]!,
+          color: const Color.fromARGB(204, 20, 20, 20),
           // circular if true
           borderRadius: isCircular ? null : BorderRadius.circular(10),
           shape: isCircular ? BoxShape.circle : BoxShape.rectangle

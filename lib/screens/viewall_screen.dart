@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:movieapi/screens/movie_detail.dart';
 import 'package:movieapi/screens/search.dart';
+import 'package:movieapi/widgets/shimmer_loader.dart';
 
 class ViewAllScreen extends StatelessWidget {
   final String title;
@@ -14,8 +15,8 @@ class ViewAllScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
- 
       appBar: AppBar(
+        scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
         leading: GestureDetector(
           onTap: () {
@@ -33,10 +34,13 @@ class ViewAllScreen extends StatelessWidget {
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
               onTap: () {
-                Navigator.push(
-                    context, CupertinoPageRoute(builder: (context) => Search()));
+                Navigator.push(context,
+                    CupertinoPageRoute(builder: (context) => Search()));
               },
-              child: Icon(Icons.search,color: Colors.grey[400],),
+              child: Icon(
+                Icons.search,
+                color: Colors.grey[400],
+              ),
             ),
           )
         ],
@@ -46,11 +50,39 @@ class ViewAllScreen extends StatelessWidget {
         future: moviesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return Container(
+             
+                child: Center(
+                    child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 20,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: .6),
+                  itemCount: 10,
+                  itemBuilder: (context, index) => ShimmerLoader(
+                    width: 100,
+                    height: 150,
+                    isCircular: false,
+                  ),
+                )));
           } else if (snapshot.hasError) {
-            return Center(
-                child: Text('Error: ${snapshot.error}',
-                    style: TextStyle(color: Colors.white)));
+            return Container(
+               
+                child: Center(
+                    child: GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 20,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: .6),
+                  itemCount: 10,
+                  itemBuilder: (context, index) => ShimmerLoader(
+                    width: 100,
+                    height: 150,
+                    isCircular: false,
+                  ),
+                )));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(
                 child: Text('No movies found',

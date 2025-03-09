@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:movieapi/data/service.dart';
 import 'package:movieapi/screens/movie_detail.dart';
+import 'package:movieapi/widgets/shimmer_loader.dart';
 
 class Search extends StatefulWidget {
   const Search({super.key});
@@ -68,7 +69,6 @@ class _SearchState extends State<Search> {
             const SizedBox(width: 10),
             Expanded(
               child: Container(
-                
                 decoration: BoxDecoration(
                   color: const Color.fromARGB(61, 97, 97, 97),
                   borderRadius: BorderRadius.circular(12),
@@ -80,7 +80,7 @@ class _SearchState extends State<Search> {
                   cursorColor: Colors.lime,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search,color: Colors.white,),
+                    prefixIcon: Icon(Icons.search, color: Colors.white),
                     hintText: 'Search',
                     hintStyle: TextStyle(color: Colors.white),
                     border: InputBorder.none,
@@ -89,12 +89,28 @@ class _SearchState extends State<Search> {
                 ),
               ),
             ),
-          
           ],
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Container(
+              child: Center(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 20,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: .6,
+                  ),
+                  itemCount: 10,
+                  itemBuilder: (context, index) => ShimmerLoader(
+                    width: 100,
+                    height: 150,
+                    isCircular: false,
+                  ),
+                ),
+              ),
+            )
           : _searchResults.isEmpty
               ? const Center(
                   child: Text(
@@ -105,7 +121,6 @@ class _SearchState extends State<Search> {
               : Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: GridView.builder(
-                    // Removed shrinkWrap and NeverScrollableScrollPhysics for normal scrolling.
                     itemCount: _searchResults.length,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
@@ -139,10 +154,23 @@ class _SearchState extends State<Search> {
                             children: [
                               Expanded(
                                 child: ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(10),
+                                  ),
                                   child: Image.network(
                                     imageUrl,
                                     fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return LayoutBuilder(
+                                        builder: (context, constraints) {
+                                          return ShimmerLoader(
+                                            width: constraints.maxWidth,
+                                            height: constraints.maxHeight,
+                                            isCircular: false,
+                                          );
+                                        },
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
