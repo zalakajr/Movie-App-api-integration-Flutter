@@ -80,7 +80,7 @@ class ViewAllScreen extends StatelessWidget {
                     );
                   },
                   child: Card(
-                    color: Colors.grey[850],
+                    color: const Color.fromARGB(64, 48, 48, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),

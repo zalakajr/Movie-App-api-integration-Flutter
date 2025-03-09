@@ -6,6 +6,25 @@ class MovieService {
       'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI3ZmU0M2NmY2NmNjkzYjExMWY5M2YxOGU1NjY1MTc1NiIsIm5iZiI6MTc0MTM1NzUzNC4yODEsInN1YiI6IjY3Y2IwMWRlMWY5ZWYzNTMyZGFmZGM5NSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.HhGOPK7SmkOvOaeubHFnzcNRI8jg5rmjaVYZZPzPQ1k';
   final String baseUrl = 'https://api.themoviedb.org/3';
 
+  // Fetch search results
+Future<List<dynamic>> fetchSearchMovies(String query) async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/search/movie?query=$query&page=1'),
+    headers: {
+      'Authorization': 'Bearer $apiToken',
+      'accept': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return data['results']; // List of movies matching the query
+  } else {
+    throw Exception('Failed to load search movies');
+  }
+}
+
+
   // Fetch popular movies
   Future<List<dynamic>> fetchPopularMovies() async {
     final response = await http.get(

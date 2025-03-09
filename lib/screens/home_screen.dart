@@ -1,4 +1,5 @@
-import 'package:carousel_slider/carousel_options.dart';
+import 'dart:async';
+import 'dart:ui';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +7,7 @@ import 'package:movieapi/data/service.dart';
 import 'package:movieapi/screens/movie_detail.dart';
 import 'package:movieapi/screens/search.dart';
 import 'package:movieapi/screens/viewall_screen.dart';
-// Added for dynamic color extraction.
+import 'package:movieapi/widgets/shimmer_loader.dart';
 import 'package:palette_generator/palette_generator.dart';
 
 class MovieHomePage extends StatefulWidget {
@@ -23,6 +24,10 @@ class _MovieHomePageState extends State<MovieHomePage> {
   int _currentCarouselIndex = 0;
   // Dynamic background color for carousel section and app bar.
   Color _carouselBgColor = Colors.black;
+  // Cache for palette colors by image URL.
+  final Map<String, Color> _paletteCache = {};
+
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -34,14 +39,28 @@ class _MovieHomePageState extends State<MovieHomePage> {
     tvSeries = MovieService().fetchTvSeries();
   }
 
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   // Update the background color by extracting the dominant color from the image.
   Future<void> updatePalette(String imageUrl) async {
+    // Check if we already have this image's color cached.
+    if (_paletteCache.containsKey(imageUrl)) {
+      setState(() {
+        _carouselBgColor = _paletteCache[imageUrl]!;
+      });
+      return;
+    }
     final PaletteGenerator paletteGenerator =
         await PaletteGenerator.fromImageProvider(NetworkImage(imageUrl));
+    Color newColor = paletteGenerator.dominantColor?.color ?? Colors.black;
+    _paletteCache[imageUrl] = newColor;
     if (mounted) {
       setState(() {
-        _carouselBgColor =
-            paletteGenerator.dominantColor?.color ?? Colors.black;
+        _carouselBgColor = newColor;
       });
     }
   }
@@ -63,7 +82,6 @@ class _MovieHomePageState extends State<MovieHomePage> {
                       color: Colors.white)),
               GestureDetector(
                 onTap: () {
-                  // Navigate to a new screen that shows all movies for this category.
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -76,7 +94,7 @@ class _MovieHomePageState extends State<MovieHomePage> {
                 },
                 child: Text(
                   "View All",
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                  style: TextStyle(fontSize: 14, color: Colors.lime),
                 ),
               ),
             ],
@@ -90,13 +108,29 @@ class _MovieHomePageState extends State<MovieHomePage> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Container(
                   height: 250,
-                  child: Center(child: CircularProgressIndicator()));
+                  child: Center(
+                      child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 5,
+                    itemBuilder: (context, index) => ShimmerLoader(
+                      width: 150,
+                      height: 250,
+                      isCircular: false,
+                    ),
+                  )));
             } else if (snapshot.hasError) {
               return Container(
                   height: 250,
                   child: Center(
-                      child: Text('Error: ${snapshot.error}',
-                          style: TextStyle(color: Colors.white))));
+                      child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 5,
+                    itemBuilder: (context, index) => ShimmerLoader(
+                      width: 150,
+                      height: 250,
+                      isCircular: false,
+                    ),
+                  )));
             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return Container(
                   height: 250,
@@ -166,13 +200,10 @@ class _MovieHomePageState extends State<MovieHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Extend body behind app bar to allow a continuous gradient.
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.black,
-      // Make the app bar transparent so the gradient shows through.
       appBar: AppBar(
         scrolledUnderElevation: 7,
-        
         backgroundColor: Colors.transparent,
         centerTitle: false,
         title: Text('Moviex', style: TextStyle(color: Colors.white)),
@@ -188,9 +219,7 @@ class _MovieHomePageState extends State<MovieHomePage> {
                   },
                   icon: Icon(Icons.search, color: Colors.grey[400]),
                 ),
-                SizedBox(
-                  width: 10,
-                ),
+                SizedBox(width: 10),
                 GestureDetector(
                   onTap: () {},
                   child: Container(
@@ -211,10 +240,9 @@ class _MovieHomePageState extends State<MovieHomePage> {
       // Using a Stack to place a gradient background behind the app bar and carousel.
       body: Stack(
         children: [
-          
           // Gradient background covering app bar and carousel section.
           Container(
-            height: kToolbarHeight + 350 + 16, // app bar + carousel height + padding
+            height: kToolbarHeight + 350 + 16,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -232,46 +260,87 @@ class _MovieHomePageState extends State<MovieHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Add top spacing to account for the app bar.
                   SizedBox(height: kToolbarHeight + 16),
-                  // Popular Movies Carousel Section (without its own gradient wrapper).
+                  
+                  // Popular Movies Carousel Section with shimmerloader.
                   FutureBuilder<List<dynamic>>(
                     future: popularMovies,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return Container(
-                            height: 350,
-                            child: Center(child: CircularProgressIndicator()));
+                          margin: EdgeInsets.symmetric(vertical: 20,),
+                          height: 300, // Height of the carousel section
+                          child: CarouselSlider.builder(
+                            itemCount:
+                                5, // Set number of shimmer items to match carousel items
+                            itemBuilder: (context, index, realIndex) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20.0),
+                                child: ShimmerLoader(
+                                  width: 250,
+                                  height: 300,
+                                  isCircular: false,
+                                ),
+                              );
+                            },
+                            options: CarouselOptions(
+                              height: 300,
+                              enlargeCenterPage: true,
+                              enableInfiniteScroll: true,
+                              viewportFraction: 0.6,
+                              autoPlay: true,
+                              initialPage: 0,
+                            ),
+                          ),
+                        );
                       } else if (snapshot.hasError) {
-                        return Center(
-                            child: Text('Error: ${snapshot.error}',
-                                style: TextStyle(color: Colors.white)));
+                        // Show the same shimmer loader if there's an error
+                        return Container(
+                            margin: EdgeInsets.symmetric(vertical: 20),
+                          height: 350, // Same height as carousel
+                          child: CarouselSlider.builder(
+                            itemCount:
+                                5, // Number of shimmer loaders (same as carousel items)
+                            itemBuilder: (context, index, realIndex) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20.0),
+                                child: ShimmerLoader(
+                                  width: 250,
+                                  height: 300,
+                                  isCircular: false,
+                                ),
+                              );
+                            },
+                            options: CarouselOptions(
+                              height: 300,
+                              enlargeCenterPage: true,
+                              enableInfiniteScroll: true,
+                              viewportFraction: 0.6,
+                              autoPlay: true,
+                              initialPage: 0,
+                            ),
+                          ),
+                        );
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                         return Center(
-                            child: Text('No movies found',
-                                style: TextStyle(color: Colors.white)));
+                          child: Text(
+                            'No popular movies found',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        );
                       } else {
                         final movies = snapshot.data!;
-                        // On first build, update the gradient using the first movie's poster.
-                        if (movies.isNotEmpty && _carouselBgColor == Colors.black) {
-                          final posterPath = movies[0]['poster_path'];
-                          final imageUrl =
-                              'https://image.tmdb.org/t/p/w500$posterPath';
-                          updatePalette(imageUrl);
-                        }
                         return Column(
-
-                          
                           children: [
-                            SizedBox(height: 60,),
-
-                           
+                            SizedBox(height: 60),
                             CarouselSlider.builder(
                               itemCount: movies.length,
                               itemBuilder: (context, index, realIndex) {
                                 final movie = movies[index];
                                 final posterPath = movie['poster_path'];
-                                final imageUrl =
+                                final carouselImageUrl =
                                     'https://image.tmdb.org/t/p/w500$posterPath';
                                 return GestureDetector(
                                   onTap: () {
@@ -284,7 +353,8 @@ class _MovieHomePageState extends State<MovieHomePage> {
                                     );
                                   },
                                   child: Container(
-                                    margin: EdgeInsets.symmetric(horizontal: 10.0),
+                                    margin:
+                                        EdgeInsets.symmetric(horizontal: 10.0),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(10),
                                       boxShadow: [
@@ -298,7 +368,7 @@ class _MovieHomePageState extends State<MovieHomePage> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
                                       child: Image.network(
-                                        imageUrl,
+                                        carouselImageUrl,
                                         fit: BoxFit.cover,
                                         width: 250,
                                         height: 300,
@@ -314,29 +384,18 @@ class _MovieHomePageState extends State<MovieHomePage> {
                                 viewportFraction: 0.6,
                                 autoPlay: true,
                                 initialPage: 0,
-                                onPageChanged: (index, reason) {
-                                  setState(() {
-                                    _currentCarouselIndex = index;
-                                  });
-                                  // Update the gradient background based on the current movie's poster.
-                                  final movie = movies[index];
-                                  final posterPath = movie['poster_path'];
-                                  final imageUrl =
-                                      'https://image.tmdb.org/t/p/w500$posterPath';
-                                  updatePalette(imageUrl);
-                                },
                               ),
                             ),
-                            // Display the title of the currently centered movie.
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               child: Text(
                                 movies[_currentCarouselIndex]['title'] ?? '',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                    color: Colors.grey[400],
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold),
+                                  color: Colors.grey[400],
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -344,6 +403,7 @@ class _MovieHomePageState extends State<MovieHomePage> {
                       }
                     },
                   ),
+
                   SizedBox(height: 20),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -386,7 +446,7 @@ class _MovieHomePageState extends State<MovieHomePage> {
                               color: Colors.grey,
                             ),
                             Text(
-                              'Detail',
+                              'List',
                               style: TextStyle(
                                   fontSize: 12, color: Colors.grey[400]),
                             )

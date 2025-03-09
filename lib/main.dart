@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:movieapi/screens/home_screen.dart';
 import 'package:movieapi/screens/movie_detail.dart';
+import 'package:movieapi/screens/search.dart';
 
 void main(){
   runApp(DevicePreview(enabled: !kReleaseMode, builder: (context) =>  MyApp(),));
